@@ -1,0 +1,187 @@
+---
+title: 'Exercise 3: Statistical distributions and P values'
+output: html_document
+date: "2023-11-13"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+**Exercise 1: Reasoning with normal distributions**
+
+```{r Load data for exercise 1}
+u='https://raw.githubusercontent.com/DavidQuigley/biostatistics/master/data/metabric.txt';
+curtis=read.table(u, header=TRUE, stringsAsFactors=FALSE);
+age = curtis$age;
+subtype = curtis$er
+```
+
+Question 1: Use the R functions mean() and sd() to calculate the mean and standard deviation for the variable age
+
+```{r Question 1}
+m = mean(curtis$age)
+sd = sd(curtis$age)
+
+print(m)
+print(sd)
+```
+
+Question 2: Use the values you calculated in question one to predict the range where you would expect 95% of the
+observations to be found. Assume that age is normally distributed, and calculate using the mean plus/minus
+equally sized values on either side of the mean.
+
+```{r Question 2}
+
+lower_bound = (qnorm( (0.05/2), mean = m, sd = sd, lower.tail = TRUE))
+upper_bound = (qnorm( (0.05/2), mean = m, sd = sd, lower.tail = FALSE))
+
+print(lower_bound)
+
+print(upper_bound)
+```
+
+Question 3: Calculate the percentage of observed values for age that actually fall within the predicted bounds you
+calculated in question two. Use the sum() function to determine the number of observed ages that fall within
+those bounds, and divide by the length of the sample size. 
+
+```{r Question 3}
+
+sum( age > lower_bound & age < upper_bound) / length(age)
+```
+
+Question 4: Calculate the probability that if you randomly select a single patient from the population, she will be at least 87 years old
+
+```{r Question 4}
+
+1-pnorm( 87, mean = m, sd = sd)
+
+```
+
+**Exercise 2: P values and effect sizes**
+
+```{r Load data for exercise 2}
+
+set.seed(42);
+experiment_1_group_1 = rnorm(500, 8, 1);
+experiment_1_group_2 = rnorm(500, 8.2, 1);
+experiment_2_group_1=c(21.95,11.14,13.82,10.26,2.02,4.42,8.99,-9.57,2.91,12.79);
+experiment_2_group_2=c(161.20,163.13,313.04,129.23,281.74,15.10,40.42,
+-17.63,210.97,173.20)
+
+# t test for experiment 1
+
+t_exp1 = t.test( experiment_1_group_1, experiment_1_group_2)
+
+# t test for experiment 2
+
+t_exp2 = t.test(experiment_2_group_1, experiment_2_group_2)
+
+print(t_exp1)
+print(t_exp2)
+```
+Question 5: What is the difference in mean values for experiment 1, and for experiment 2? This is the effect size of the group. Remember that the t.test() function calculates the mean of the sample groups for you. 
+```{r}
+
+# mean difference experiment 1
+mean_exp1_grp1 = mean(experiment_1_group_1)
+mean_exp1_grp2 = mean(experiment_1_group_2)
+
+mean_diff_exp1 = mean_exp1_grp2 - mean_exp1_grp1
+
+print (mean_diff_exp1)
+
+# mean difference experiment 2
+
+mean_exp2_grp1 = mean(experiment_2_group_1)
+mean_exp2_grp2 = mean(experiment_2_group_2)
+
+mean_diff_exp2 = mean_exp2_grp2 - mean_exp2_grp1
+
+print (mean_diff_exp2)
+```
+
+Question 6: What are the P values for experiment 1, and for experiment 2? Briefly explain this result in terms of the effect size, sample sizes (note that the N for experiment one is considerably larger than for experiment 2), and variation in the measured values from each experiment. 
+
+```{r}
+t_exp1$p.value
+t_exp2$p.value
+```
+
+In experiment 1, there is a very large sample size but a small difference in means between the groups, yet the p-value is still very small. In experiment 2, the sample size is very small, however, the difference in means is large, which results in a small p-value. This demonstrates how the p-value is sensitive to both sample size and effect size. 
+
+Question 7: When you read a published P value, does this P value give information about the effect size?
+
+No; a low p-value could result from a small difference in means but a large sample size, such as in experiment 1. 
+
+Question 8:
+a. Which panels do a reasonable job of illustrating the total amount of variance in the data set?
+
+a, b, c
+
+b. Why are the error bars much smaller in panel E than in panel D?
+
+In panel D, the error bars represent one standard deviation away from the mean, which is actually a measure of the variance in the data. In E, the error bars represent the standard error of the mean, which is an estimate of how well we have estimated the mean in the population. This is not actually a measure of the variation in our data.
+
+c. Presenting data as seen in panel E is common in some kinds of biomedical literature. Does this panel
+convey the variation in the sample?
+
+No.
+
+**Exercise 3: Power calculation**
+
+Question 9: Calculate the power to detect a difference in weight of 1 gram using a t test under the following conditions:
+Your experiment will weigh 10 mice in each of two groups, with a expected standard deviation in weight of 2
+grams at a 5% alpha level.
+
+```{r Question 9}
+
+power.t.test(n = 10, delta = 1, power = NULL, sd = 2, sig.level = 0.05)
+
+```
+
+Question 10: Create a bar plot of the power using the conditions above, but at the n values 10, 20, 30, 40, 50, and 60. How many samples per group are required to achieve at least 80% power?
+
+```{r Question 10}
+
+powers = power.t.test(c(n = 10, 20, 30, 40, 50, 60), delta = 1, power = NULL, sd = 2)
+
+print(powers)
+
+barplot(powers$power)
+
+
+```
+
+Question 11: In the first section of the proposal, you propose animal studies testing a RUD37 inhibitor and a HUG3 inhibitor. Each study will have an inhibitor arm and a placebo treatment arm. The budget is sufficient to pay for 20 mice, so your PI suggests allocating 5 mice to each of the four experimental arms. Your lab has not performed this particular experiment before, so to estimate the variability in the sample, you will use preliminary data from other experiments performed using this assay in a similar mouse strain. Use the provided data set in the preliminary_data variable below to calculate the standard deviation and mean value in the placebo arm. 
+```{r Question 11}
+
+preliminary_data = c(14.1, 18.0, 2.9, 8.7, 8.5, 11.6, 4.2, 20.6, 10.3, 16.8)
+
+mean_prelim = mean(preliminary_data)
+sd_prelim = sd(preliminary_data)
+
+print(mean_prelim)
+print(sd_prelim)
+```
+
+Question 12: You are not sure how big of an effect your drug treatment will produce, but your PI suggests that based on previous experiments with a RUD37 knockout strain, a 50% increase over placebo would be the strongest effect you would expect to see. You will therefore estimate the power to detect a range of effect sizes up to 50%. Use the power.t.test() function with 5 subjects per group and the standard deviation you calculated in question 10 to calculate the power to detect an effect size of 10%, 20%, 30%, 40%, and 50% at a alpha-level significance level of 0.05.
+
+```{r Question 12}
+
+delta_10 = mean_prelim*0.1
+delta_20 = mean_prelim*0.2
+delta_30 = mean_prelim*0.3
+delta_40 = mean_prelim*0.4
+delta_50 = mean_prelim*0.5
+
+power.t.test(n = 5, delta = c(delta_10, delta_20, delta_30, delta_40, delta_50), power = NULL, sd = sd_prelim, sig.level = 0.05)
+
+```
+Question 13: It is typical (though not strictly required) that a study be constructed to aim for an 80% power. This study design is not predicted to have that level of power. Comment on some strategies you could employ to improve the expected power.
+
+Some strategies to improve the expected power are to increase N (if you are able to receive more money from your PI) or try to vary the effect size. 
+
+Question 14: Your PI says that because you are only interested in whether a mutation in RUD37 is associated with a decrease in lymphocyte count, a one-sided test is appropriate. Comment on the merits or deficiencies of this suggestion.
+
+No, this is not the right thing to do. One limitation is that it would make it very easy for you to get a small p-value in the direction that you are expecting. On the other hand, you are not allowing for the possibility that your hypothesis is exactly wrong. A two-tailed t test would answer the question of whether the two groups are different, while a one-tailed t test would answer whether the two groups are different in that one particular way. The issue with this is that the two groups could be different in a way different from what you would expect and if that is the case, thereis no way you would be able to tell from a one-tailed test. 
